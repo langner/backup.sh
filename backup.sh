@@ -15,19 +15,18 @@ REMOTE="backup@othermachine"
 # The first is the directory to backup to on the remote machine, and the second
 # is the location on the local machine (assuming it is mounted somehow).
 ROOT_REMOTE="/mnt/backups/$LOCAL"
-ROOT_LOCAL="/nfs/backups/$LOCAL"
 LOG_DIR="/root/local/logs/backups"
 
 # When adding a target directory to this list, the corresponding directory
 # will need to be created on the remote in ROOT_REMOTE as defined above.
-DIRLIST="/etc /home /opt /usr/local /var"
+DIRLIST="/ /data /home /var"
 
 # The number of days back to keep archives. Note that we will not remove all older
 # archives at once, rather the script will attempt to remove the snapshot from
 # exactly NKEEP days ago each time it runs. This incremental behavior allows some
 # manual tweaking, and requires a bit of supervision. The second flag determines
 # whether the first day of each month is never removed.
-NKEEP=30
+NKEEP=14
 KEEPFIRST=1
 
 # We will be using the weakest encryption available and any options that decrease
@@ -49,20 +48,18 @@ TODAY=`date --iso-8601`
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 for DIR in $DIRLIST; do
 
-    # Reset the internal bash timer.
+    # Reset the bash timer.
     SECONDS=0
 
     # Replace slashes with underscores to keep all directories on the same level.
     DEST=`echo $DIR | sed 's/\//_/g'`
 
     # If there is a file in the same directory with the expected pattern,
-    # use each line from it as an exception to ignore for rsync.
+    # use it to exclude patterns from the backup.
     EXCLUDE=""
     EXCLUDE_FILE=$SCRIPTDIR/backup$DEST.exclude
     if [ -e $EXCLUDE_FILE ]; then
-        for LINE in `cat $EXCLUDE_FILE`; do
-            EXCLUDE="$EXCLUDE --exclude=$LINE"
-        done
+        EXCLUDE="--exclude-from=$EXCLUDE_FILE"
     fi
 
     LINK_DEST="$ROOT_REMOTE/$DEST/last"
@@ -78,23 +75,20 @@ for DIR in $DIRLIST; do
     # If there were no errors, do the bookkeeping, otherwise complain.
     if [ $? -eq 0 ]; then
 
-        # Update the symbolic link used for --link-dest. Since we have the backup directory
-        # mounted locally, we don't need to connect to the remote host to do this.
-        cd $ROOT_LOCAL/$DEST
-        rm last
-        ln -s $TODAY last
+        # Update the symbolic link used for --link-dest.
+        rsh $REMOTE "cd $ROOT_REMOTE/$DEST; rm last; ln -s $TODAY last"
 
         # Remove snapshot from NKEEP days ago.
-        cd $ROOT_LOCAL/$DEST
         if [ `date --date="$NKEEP days ago" +"%d"` != "01" -o $KEEPFIRST != 1 ]; then
             TOREMOVE=`date --date="$NKEEP days ago" --iso`
-            if [ -e $TOREMOVE ]; then
-                echo "Removing $ROOT_REMOTE/$DEST/$TOREMOVE on $REMOTE..." >> $LOG
-                ssh $REMOTE "rm -rf $ROOT_REMOTE/$DEST/$TOREMOVE"
+            TOREMOVE="$ROOT_REMOTE/$DEST/$TOREMOVE"
+            if ssh $REMOTE stat $TOREMOVE \> /dev/null 2\>\&1; then
+                echo "Removing $TOREMOVE on $REMOTE..." >> $LOG
+                rsh $REMOTE "rm -rf $TOREMOVE"
             fi
         fi
 
-        # Since we reset SECONDS, this should show the time spent on this dir only.
+        # Since we reset SECONDS above, this should show the time spent on this directory only.
         echo "Finished in ${SECONDS}s." >> $LOG
 
     else
