@@ -26,7 +26,7 @@ KEEPFIRST=$4
 DIR=$5
 
 # Make sure the script is not already running, by reserving an exclusive lock file.
-LOCKFILE=/var/run/backup.lock
+LOCKFILE=/tmp/backup.lock
 exec 200>$LOCKFILE
 flock -n 200 || { echo "Lock file in use, script might already be running."; exit 1; }
 
