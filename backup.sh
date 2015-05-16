@@ -27,7 +27,7 @@ DIR=$5
 
 # Replace slashes with underscores in the local path to keep all directories on
 # the remote machine on the same level.
-DEST=`echo $DIR | sed 's/\//_/g'
+DEST=`echo $DIR | sed 's/\//_/g'`
 
 # Make sure the script is not already running, by reserving an exclusive lock file.
 LOCKFILE=/tmp/backup$DEST.lock
