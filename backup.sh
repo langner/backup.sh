@@ -28,7 +28,7 @@ DIR=$5
 # Make sure the script is not already running, by reserving an exclusive lock file.
 LOCKFILE=/tmp/backup.lock
 exec 200>$LOCKFILE
-flock -n 200 || { echo "Lock file in use, script might already be running."; exit 1; }
+flock -n 200 || { >&2 echo "Lock file in use, script might already be running."; exit 1; }
 
 TODAY=`date --iso-8601`
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
