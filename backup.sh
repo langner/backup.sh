@@ -25,8 +25,12 @@ NKEEP=$3
 KEEPFIRST=$4
 DIR=$5
 
+# Replace slashes with underscores in the local path to keep all directories on
+# the remote machine on the same level.
+DEST=`echo $DIR | sed 's/\//_/g'
+
 # Make sure the script is not already running, by reserving an exclusive lock file.
-LOCKFILE=/tmp/backup.lock
+LOCKFILE=/tmp/backup$DEST.lock
 exec 200>$LOCKFILE
 flock -n 200 || { >&2 echo "Lock file in use, script might already be running."; exit 1; }
 
@@ -41,10 +45,6 @@ RSH="ssh -c arcfour -T -x -o Compression=no"
 # Let rsync print out as much info as technically possible, although this requires
 # munging the output we get in order to log it in an acceptable form.
 RSYNC_OPTS="--numeric-ids --archive --verbose --stats --progress --human-readable"
-
-# Replace slashes with underscores in the local path to keep all directories on
-# the remote machine on the same level.
-DEST=`echo $DIR | sed 's/\//_/g'`
 
 # If there is a file in the same directory with the expected pattern, use it to
 # define exclude patterns from the backup. This is particularly important when
