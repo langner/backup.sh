@@ -30,7 +30,7 @@ DIR=$5
 DEST=`echo $DIR | sed 's/\//_/g'`
 
 # Make sure the script is not already running, by reserving an exclusive lock file.
-LOCKFILE=/tmp/backup$DEST.lock
+LOCKFILE=/tmp/backup$DEST.$REMOTE.lock
 exec 200>$LOCKFILE
 flock -n 200 || { >&2 echo "Lock file in use, script might already be running."; exit 1; }
 
