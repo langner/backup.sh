@@ -44,7 +44,7 @@ RSH="ssh -c arcfour -T -x -o Compression=no"
 
 # Let rsync print out as much info as technically possible, although this requires
 # munging the output we get in order to log it in an acceptable form.
-RSYNC_OPTS="--numeric-ids --archive --verbose --stats --progress --human-readable"
+RSYNC_OPTS="--numeric-ids --archive --hard-links --verbose --stats --progress --human-readable"
 
 # If there is a file in the same directory with the expected pattern, use it to
 # define exclude patterns from the backup. This is particularly important when
